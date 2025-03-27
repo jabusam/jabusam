@@ -1,0 +1,52 @@
+`trading_strategy.py`
+```
+import yfinance as yf
+import pandas as pd
+from gitlab import Gitlab
+
+GitLab settings
+gitlab_url = "https://gitlab.com"
+gitlab_token = "your_gitlab_token"
+gitlab_project_id = "your_gitlab_project_id"
+
+Trading settings
+asset = "BTC-USD"
+timeframe = "15m"
+position_sizing = 0.02
+
+Function to get the latest candle data
+def get_latest_candle():
+    data = yf.download(asset, period="1d", interval=timeframe)
+    return data.iloc[-1]
+
+Function to check for trading signals
+def check_trading_signals(candle_data):
+    # Implement your own trading logic here
+    if candle_data["Close"] > candle_data["Open"]:
+        return "Buy"
+    elif candle_data["Close"] < candle_data["Open"]:
+        return "Sell"
+    else:
+        return "Neutral"
+
+Function to send trading signals to GitLab
+def send_trading_signals(signal):
+    gl = Gitlab(gitlab_url, private_token=gitlab_token)
+    project = gl.projects.get(gitlab_project_id)
+    file_path = f"{asset}_{timeframe}_signal.txt"
+    file_content = signal
+    project.files.create({
+        "file_path": file_path,
+        "branch": "main",
+        "content": file_content,
+        "commit_message": f"New trading signal for {asset}"
+    })
+
+Main trading loop
+while True:
+    candle_data = get_latest_candle()
+    signal = check_trading_signals(candle_data)
+    send_trading_signals(signal)
+    # Sleep for 15 minutes
+    time.sleep(15 * 60)
+```
